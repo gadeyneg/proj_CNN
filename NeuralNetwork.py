@@ -41,19 +41,6 @@ class NeuralNetwork:
             self.backprop(y_pred, y)
 
 
-# %%
-
-import Layers
-import random
-
-model = NeuralNetwork(loss_func=Losses.sum_square)
-
-l1 = Layers.Input_2D((8,8,1))
-model.add_layer(l1)
-
-l2 = Layers.Conv2D(l1, 5)
-model.add_layer(l2)
-
 #%%
 if __name__ == "__main__" :
 

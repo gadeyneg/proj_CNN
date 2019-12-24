@@ -91,15 +91,21 @@ class Input_2D:
 class MaxPool2D:
     def __init__(self, previous_layer):
         h, w, f = previous_layer.get_shape()
+        self.pos_save = np.zeros((h,w,f)).astype(np.int8)
         self.shape = ( h//2, w//2, f)
         self.output = np.zeros((self.shape)).astype(np.float64)
         self.previous_layer = previous_layer
 
     def compute(self):
+        self.pos_save = np.zeros(self.pos_save.shape).astype(np.int8)
         h,w, f = self.previous_layer.get_shape()
         for i in range(0,h-1, 2):
             for j in range(0, w-1, 2):
-                self.output[i//2, j//2] = [self.previous_layer.output[i:i+2, j:j+2, f_i].max() for f_i in range(f)]
+                for f_i in range(f):
+                    self.output[i//2, j//2, f_i] = self.previous_layer.output[i:i+2, j:j+2, f_i].max()
+                    pos = self.previous_layer.output[i:i+2, j:j+2, f_i].argmax()
+                    i_max, j_max = pos//2, pos%2
+                    self.pos_save[i+i_max, j+j_max, f_i] = 1
 
     def get_output(self):
         return self.output
@@ -108,7 +114,19 @@ class MaxPool2D:
         return self.shape
 
     def compute_backprop(self, D):
-        return D
+        D = D.reshape(self.shape)
+        res = np.zeros((self.previous_layer.shape))
+        h,w,f = res.shape
+        tot = 0
+        found = 0
+        for i in range(h):
+            for j in range(w):
+                for k in range(f):
+                    tot += 1
+                    if self.pos_save[i, j, k] == 1:
+                        res[i, j, k] = D[i//2, j//2, k]
+                        found += 1
+        return res
 
 class Conv2D:
     def __init__(self, previous_layer, filter_number, padding = "valid"):
